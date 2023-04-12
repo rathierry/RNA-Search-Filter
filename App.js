@@ -1,20 +1,40 @@
-import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View } from 'react-native';
+import { useState } from 'react';
+import { SafeAreaView, StyleSheet, TextInput } from 'react-native';
 
-export default function App() {
+export default App = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const handleSearch = (query) => {
+    console.log("🚀 ~ file: App.js:8 ~ handleSearch ~ query:", query)
+    setSearchQuery(query);
+  }
+
   return (
-    <View style={styles.container}>
-      <Text>Open up App.js to start working on your app 😊</Text>
-      <StatusBar style="auto" />
-    </View>
+    <SafeAreaView style={styles.container}>
+      <TextInput
+        placeholder='Search'
+        clearButtonMode='always'
+        autoCapitalize='none'
+        autoCorrect={false}
+        value={searchQuery}
+        onChangeText={(query) => handleSearch(query)}
+        style={styles.searchBox}
+      />
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    marginHorizontal: 20,
     backgroundColor: '#FFF',
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  searchBox: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: '#CCC'
   },
 });
