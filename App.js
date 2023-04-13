@@ -4,7 +4,8 @@ import {
   Alert,
   FlatList,
   Image,
-  Pressable,
+  TouchableOpacity,
+  RefreshControl,
   SafeAreaView,
   StyleSheet,
   Text,
@@ -25,12 +26,18 @@ export default App = () => {
   const [error, setError] = useState(null);
   const [fullData, setFullData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
+  const [isRefreshing, setIsRefreshing] = useState(true);
+
+  const loadUserData = () => {
+    setTimeout(async () => {
+      await fetchData(API_URL);
+    }, TIMEOUT);
+  };
 
   const init = () => {
     setIsLoading(true);
-    setTimeout(() => {
-      fetchData(API_URL);
-    }, TIMEOUT);};
+    loadUserData();
+  };
 
   useEffect(() => {
     init();
@@ -44,9 +51,11 @@ export default App = () => {
       setData(results);
       setFullData(results);
       setIsLoading(false);
+      setIsRefreshing(false);
     } catch (error) {
       setError(error);
       setIsLoading(false);
+      setIsRefreshing(false);
     }
   };
 
@@ -67,6 +76,11 @@ export default App = () => {
     setData(filteredData);
   };
 
+  const onRefreshUserData = () => {
+    setIsRefreshing(true);
+    loadUserData();
+  };
+
   const onPressItem = ({ name: { first, last }, email }) => {
     Alert.alert(`${first} ${last}`, email);
   };
@@ -85,22 +99,22 @@ export default App = () => {
       <View style={styles.center}>
         <Text>Error on fetching data ...</Text>
         <Text>Please check your internet connection!</Text>
-        <Pressable onPress={init} style={styles.button}>
+        <TouchableOpacity activeOpacity={0.7} onPress={init} style={styles.button}>
           <Text>Refresh</Text>
-        </Pressable>
+        </TouchableOpacity>
       </View>
     );
   }
 
   const renderItem = (item) => {
     return (
-      <Pressable onPress={() => onPressItem(item)} style={styles.itemContainer}>
+      <TouchableOpacity activeOpacity={0.7} onPress={() => onPressItem(item)} style={styles.itemContainer}>
         <Image source={{uri: item.picture.thumbnail}} style={styles.image} />
         <View>
           <Text style={styles.textName}>{item.name.first} {item.name.last}</Text>
           <Text style={styles.textEmail}>{item.email}</Text>
         </View>
-      </Pressable>
+      </TouchableOpacity>
     );
   };
 
@@ -119,6 +133,16 @@ export default App = () => {
           data={data}
           keyExtractor={(item) => item.login.uuid}
           renderItem={({item}) => renderItem(item)}
+          refreshing={isRefreshing}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefreshing}
+              onRefresh={onRefreshUserData}
+              colors={['#89CFF0']}
+              progressBackgroundColor={'#F8F9F9'}
+              tintColor={'#89CFF0'}
+            />
+          }
         />
     </SafeAreaView>
   );
@@ -148,12 +172,13 @@ const styles = StyleSheet.create({
     elevation: 8
   },
   searchBox: {
-    paddingHorizontal: 20,
-    paddingVertical: 10,
+    paddingHorizontal: 18,
+    paddingVertical: 8,
     borderWidth: 1,
     borderRadius: 8,
     borderColor: '#CCC',
-    marginVertical: 8
+    marginVertical: 8,
+    backgroundColor: '#F8F9F9'
   },
   itemContainer: {
     flexDirection: 'row',
