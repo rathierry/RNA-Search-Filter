@@ -10,6 +10,7 @@ import {
   TextInput,
   View 
 } from 'react-native';
+import filter from 'lodash.filter';
 
 const TIMEOUT = 3000; // 3 seconds
 const ITEMS_PER_PAGE = 100;
@@ -21,6 +22,7 @@ export default App = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
+  const [fullData, setFullData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
 
   const init = () => {
@@ -39,6 +41,7 @@ export default App = () => {
       const json = await response.json();
       const results = json.results;
       setData(results);
+      setFullData(results);
       setIsLoading(false);
     } catch (error) {
       setError(error);
@@ -46,8 +49,21 @@ export default App = () => {
     }
   };
 
+  const contains = ({name, email}, query) => {
+    const { first, last } = name;
+    if (first.includes(query) || last.includes(query) || email.includes(query)) {
+      return true;
+    }
+    return false;
+  };
+
   const handleSearch = (query) => {
     setSearchQuery(query);
+    const formattedQuery = query.toLowerCase();
+    const filteredData = filter(fullData, (user) => {
+      return contains(user, formattedQuery);
+    });
+    setData(filteredData);
   };
 
   if (isLoading) {
@@ -76,7 +92,7 @@ export default App = () => {
       <View style={styles.itemContainer}>
         <Image source={{uri: item.picture.thumbnail}} style={styles.image} />
         <View>
-          <Text style={styles.textName}>{item.name.first} - {item.name.last}</Text>
+          <Text style={styles.textName}>{item.name.first} {item.name.last}</Text>
           <Text style={styles.textEmail}>{item.email}</Text>
         </View>
       </View>
