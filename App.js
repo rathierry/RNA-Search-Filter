@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { 
+import { useEffect, useRef, useState } from "react";
+import {
   ActivityIndicator,
   Alert,
   FlatList,
@@ -10,31 +10,32 @@ import {
   StyleSheet,
   Text,
   TextInput,
-  View 
-} from 'react-native';
-import filter from 'lodash.filter';
+  View
+} from "react-native";
+import filter from "lodash.filter";
 
 const TIMEOUT = 3000; // 3 seconds
-const ITEMS_PER_PAGE = 50;
-const BASE_URL = 'https://randomuser.me';
+const ITEMS_PER_PAGE = 100;
+const BASE_URL = "https://randomuser.me";
 const API_URL = `${BASE_URL}/api?results=${ITEMS_PER_PAGE}`;
 const END_REACHED_THRESHOLD = 0.2;
 const SCROLL_EVENT_THROTTLE = 250;
 
-export default App = () => {
+export default (App = () => {
+  const listViewRef = useRef(null);
   const [isLoading, setIsLoading] = useState(false);
   const [data, setData] = useState([]);
   const [error, setError] = useState(null);
   const [fullData, setFullData] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [isRefreshing, setIsRefreshing] = useState(true);
   const [page, setPage] = useState(1);
   const [allLoaded, setAllLoaded] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   const totalItems = Array.isArray(data) ? data.length : 0;
-  
+
   const delay = time => new Promise(result => setTimeout(result, time));
-  
+
   const loadUserData = async () => {
     await delay(TIMEOUT);
     await fetchData(`${API_URL}&page=${page}`);
@@ -49,7 +50,7 @@ export default App = () => {
     init();
   }, []);
 
-  const fetchData = async (url) => {
+  const fetchData = async url => {
     try {
       const response = await fetch(url);
       const json = await response.json();
@@ -66,21 +67,25 @@ export default App = () => {
     }
   };
 
-  const contains = ({name, email}, query) => {
+  const contains = ({ name, email }, query) => {
     const { first, last } = name;
-    if (first.includes(query) || last.includes(query) || email.includes(query)) {
+    if (
+      first.includes(query) ||
+      last.includes(query) ||
+      email.includes(query)
+    ) {
       return true;
     }
     return false;
   };
 
-  const handleSearch = (query) => {
+  const handleSearch = query => {
     setIsLoading(false);
     setIsRefreshing(false);
     setIsLoadingMore(false);
     setSearchQuery(query);
     const formattedQuery = query.toLowerCase();
-    const filteredData = filter(fullData, (user) => {
+    const filteredData = filter(fullData, user => {
       return contains(user, formattedQuery);
     });
     setData(filteredData);
@@ -95,7 +100,7 @@ export default App = () => {
     loadUserData();
   };
 
-  const onRetrieveMoreUserData = async (info) => {
+  const onRetrieveMoreUserData = async info => {
     // if already loading more, or all loaded or searching, return
     if (isLoadingMore || allLoaded || !!searchQuery) {
       return;
@@ -115,10 +120,20 @@ export default App = () => {
     setIsLoadingMore(false);
   };
 
+  // on click of up button we scrolled the list to top
+  const upButtonHandler = () => {
+    listViewRef.current.scrollToOffset({ offset: 0, animated: true });
+  };
+
+  // on click of down button we scrolled the list to bottom
+  const downButtonHandler = () => {
+    listViewRef.current.scrollToEnd({ animated: true });
+  };
+
   const renderSpinner = () => {
     return (
       <View style={styles.center}>
-        <ActivityIndicator size='large' color="#89CFF0" />
+        <ActivityIndicator size="large" color="#89CFF0" />
         <Text>Loading ...</Text>
       </View>
     );
@@ -129,7 +144,11 @@ export default App = () => {
       <View style={styles.center}>
         <Text>Error on fetching data ...</Text>
         <Text>Please check your internet connection!</Text>
-        <TouchableOpacity activeOpacity={0.7} onPress={init} style={styles.button}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={init}
+          style={styles.button}
+        >
           <Text>Refresh</Text>
         </TouchableOpacity>
       </View>
@@ -143,20 +162,32 @@ export default App = () => {
     return (
       <View style={styles.center}>
         <Text>No data at the moment</Text>
-        <TouchableOpacity activeOpacity={0.7} onPress={init} style={styles.button}>
+        <TouchableOpacity
+          activeOpacity={0.7}
+          onPress={init}
+          style={styles.button}
+        >
           <Text>Refresh</Text>
         </TouchableOpacity>
       </View>
     );
   };
 
-  const renderItem = (item) => {
+  const renderItem = item => {
     return (
-      <TouchableOpacity activeOpacity={0.7} onPress={() => onPressItem(item)} style={styles.itemContainer}>
-        <Image source={{uri: item.picture.thumbnail}} style={styles.image} />
+      <TouchableOpacity
+        activeOpacity={0.7}
+        onPress={() => onPressItem(item)}
+        style={styles.itemContainer}
+      >
+        <Image source={{ uri: item.picture.thumbnail }} style={styles.image} />
         <View>
-          <Text style={styles.textName}>{item.name.first} {item.name.last}</Text>
-          <Text style={styles.textEmail}>{item.email}</Text>
+          <Text style={styles.textName}>
+            {item.name.first} {item.name.last}
+          </Text>
+          <Text style={styles.textEmail}>
+            {item.email}
+          </Text>
         </View>
       </TouchableOpacity>
     );
@@ -165,7 +196,7 @@ export default App = () => {
   const renderFooter = () => {
     return (
       <View style={styles.footer}>
-        {isLoadingMore && <ActivityIndicator size='large' color="#89CFF0" />}
+        {isLoadingMore && <ActivityIndicator size="large" color="#89CFF0" />}
         {allLoaded && <Text>No more users at the moment</Text>}
       </View>
     );
@@ -175,30 +206,31 @@ export default App = () => {
     return (
       <SafeAreaView style={styles.container}>
         <TextInput
-          placeholder='Search'
-          clearButtonMode='always'
-          autoCapitalize='none'
+          placeholder="Search"
+          clearButtonMode="always"
+          autoCapitalize="none"
           autoCorrect={false}
           value={searchQuery}
-          onChangeText={(query) => handleSearch(query)}
+          onChangeText={query => handleSearch(query)}
           style={styles.searchBox}
         />
         <View style={styles.totalContainer}>
           <Text style={styles.totalText}>Total users:</Text>
           <Text>{` ${data.length}`}</Text>
         </View>
-        <FlatList 
+        <FlatList
+          ref={listViewRef}
           data={data}
-          keyExtractor={(item) => item.login.uuid}
-          renderItem={({item}) => renderItem(item)}
+          keyExtractor={item => item.login.uuid}
+          renderItem={({ item }) => renderItem(item)}
           refreshing={isRefreshing}
           refreshControl={
             <RefreshControl
               refreshing={isRefreshing}
               onRefresh={onRefreshUserData}
-              colors={['#89CFF0']}
-              progressBackgroundColor={'#F8F9F9'}
-              tintColor={'#89CFF0'}
+              colors={["#89CFF0"]}
+              progressBackgroundColor={"#F8F9F9"}
+              tintColor={"#89CFF0"}
             />
           }
           ListEmptyComponent={renderEmpty}
@@ -206,8 +238,25 @@ export default App = () => {
           scrollEventThrottle={SCROLL_EVENT_THROTTLE}
           // how close to the end of list until next data request is made
           onEndReachedThreshold={END_REACHED_THRESHOLD}
-          onEndReached={(info) => onRetrieveMoreUserData(info)}
+          onEndReached={info => onRetrieveMoreUserData(info)}
         />
+        <View style={styles.floatingContainer}>
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={upButtonHandler}
+            style={styles.touchableOpacityStyle}
+          >
+            <Text>U</Text>
+          </TouchableOpacity>
+          <Text />
+          <TouchableOpacity
+            activeOpacity={0.7}
+            onPress={downButtonHandler}
+            style={styles.touchableOpacityStyle}
+          >
+            <Text>D</Text>
+          </TouchableOpacity>
+        </View>
       </SafeAreaView>
     );
   };
@@ -219,28 +268,28 @@ export default App = () => {
   if (!!error) {
     return renderError();
   }
-  
+
   return render();
-}
+});
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     marginHorizontal: 20,
-    backgroundColor: '#FFF',
+    backgroundColor: "#FFF"
   },
   center: {
     flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center'
+    justifyContent: "center",
+    alignItems: "center"
   },
   button: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#89CFF0',
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#89CFF0",
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: '#CCC',
+    borderColor: "#CCC",
     paddingHorizontal: 12,
     paddingVertical: 10,
     marginTop: 6,
@@ -251,26 +300,26 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: '#CCC',
+    borderColor: "#CCC",
     marginVertical: 8,
-    backgroundColor: '#F8F9F9'
+    backgroundColor: "#F8F9F9"
   },
   totalContainer: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    alignItems: 'center'
+    flexDirection: "row",
+    justifyContent: "flex-end",
+    alignItems: "center"
   },
   totalText: {
-    fontWeight: '600',
-    textDecorationLine: 'underline'
+    fontWeight: "600",
+    textDecorationLine: "underline"
   },
   itemContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 14,
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: '#CCC',
+    borderColor: "#CCC",
     paddingHorizontal: 8,
     paddingVertical: 10
   },
@@ -282,16 +331,37 @@ const styles = StyleSheet.create({
   textName: {
     fontSize: 17,
     marginLeft: 10,
-    fontWeight: '600'
+    fontWeight: "600"
   },
   textEmail: {
     fontSize: 14,
     marginLeft: 10,
-    color: 'grey'
+    color: "grey"
   },
   footer: {
     marginTop: 8,
-    justifyContent: 'center',
-    alignItems: 'center'
+    justifyContent: "center",
+    alignItems: "center"
+  },
+  floatingContainer: {
+    position: "absolute",
+    right: 0,
+    bottom: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 8
+  },
+  touchableOpacityStyle: {
+    width: 30,
+    height: 30,
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 16,
+    backgroundColor: "#89CFF0"
+  },
+  floatingButtonStyle: {
+    resizeMode: "contain",
+    width: 50,
+    height: 50
   }
 });
