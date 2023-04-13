@@ -15,10 +15,11 @@ import {
 import filter from 'lodash.filter';
 
 const TIMEOUT = 3000; // 3 seconds
-const ITEMS_PER_PAGE = 100;
-const PAGE = 1;
+const ITEMS_PER_PAGE = 50;
 const BASE_URL = 'https://randomuser.me';
-const API_URL = `${BASE_URL}/api?results=${ITEMS_PER_PAGE}&page=${PAGE}`;
+const API_URL = `${BASE_URL}/api?results=${ITEMS_PER_PAGE}`;
+const END_REACHED_THRESHOLD = 0.2;
+const SCROLL_EVENT_THROTTLE = 250;
 
 export default App = () => {
   const [isLoading, setIsLoading] = useState(false);
@@ -27,11 +28,16 @@ export default App = () => {
   const [fullData, setFullData] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isRefreshing, setIsRefreshing] = useState(true);
-
-  const loadUserData = () => {
-    setTimeout(async () => {
-      await fetchData(API_URL);
-    }, TIMEOUT);
+  const [page, setPage] = useState(1);
+  const [allLoaded, setAllLoaded] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const totalItems = Array.isArray(data) ? data.length : 0;
+  
+  const delay = time => new Promise(result => setTimeout(result, time));
+  
+  const loadUserData = async () => {
+    await delay(TIMEOUT);
+    await fetchData(`${API_URL}&page=${page}`);
   };
 
   const init = () => {
@@ -48,8 +54,9 @@ export default App = () => {
       const response = await fetch(url);
       const json = await response.json();
       const results = json.results;
-      setData(results);
-      setFullData(results);
+      // after the response increasing the offset for the next API call
+      setData([...data, ...results]);
+      setFullData([...fullData, ...results]);
       setIsLoading(false);
       setIsRefreshing(false);
     } catch (error) {
@@ -68,6 +75,9 @@ export default App = () => {
   };
 
   const handleSearch = (query) => {
+    setIsLoading(false);
+    setIsRefreshing(false);
+    setIsLoadingMore(false);
     setSearchQuery(query);
     const formattedQuery = query.toLowerCase();
     const filteredData = filter(fullData, (user) => {
@@ -85,7 +95,27 @@ export default App = () => {
     loadUserData();
   };
 
-  const spinnerRender = () => {
+  const onRetrieveMoreUserData = async (info) => {
+    // if already loading more, or all loaded or searching, return
+    if (isLoadingMore || allLoaded || !!searchQuery) {
+      return;
+    }
+    // set loading more (also updates footer text)
+    setIsLoadingMore(true);
+    // get more data
+    setPage(page + 1);
+    loadUserData();
+    await delay(2000);
+    // TODO: check if any users data to loaded
+    // TODO: // if no new items were fetched, set all loaded to true to prevent further requests
+    // setAllLoaded(true);
+    // TODO: // else process the newly fetched items
+    // ...
+    // load more complete, set loading more to false
+    setIsLoadingMore(false);
+  };
+
+  const renderSpinner = () => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size='large' color="#89CFF0" />
@@ -94,7 +124,7 @@ export default App = () => {
     );
   };
 
-  const errorRender = () => {
+  const renderError = () => {
     return (
       <View style={styles.center}>
         <Text>Error on fetching data ...</Text>
@@ -107,6 +137,9 @@ export default App = () => {
   };
 
   const renderEmpty = () => {
+    if (!!searchQuery) {
+      return;
+    }
     return (
       <View style={styles.center}>
         <Text>No data at the moment</Text>
@@ -129,6 +162,15 @@ export default App = () => {
     );
   };
 
+  const renderFooter = () => {
+    return (
+      <View style={styles.footer}>
+        {isLoadingMore && <ActivityIndicator size='large' color="#89CFF0" />}
+        {allLoaded && <Text>No more users at the moment</Text>}
+      </View>
+    );
+  };
+
   const render = () => {
     return (
       <SafeAreaView style={styles.container}>
@@ -141,6 +183,10 @@ export default App = () => {
           onChangeText={(query) => handleSearch(query)}
           style={styles.searchBox}
         />
+        <View style={styles.totalContainer}>
+          <Text style={styles.totalText}>Total users:</Text>
+          <Text>{` ${data.length}`}</Text>
+        </View>
         <FlatList 
           data={data}
           keyExtractor={(item) => item.login.uuid}
@@ -155,21 +201,23 @@ export default App = () => {
               tintColor={'#89CFF0'}
             />
           }
+          ListEmptyComponent={renderEmpty}
+          ListFooterComponent={renderFooter}
+          scrollEventThrottle={SCROLL_EVENT_THROTTLE}
+          // how close to the end of list until next data request is made
+          onEndReachedThreshold={END_REACHED_THRESHOLD}
+          onEndReached={(info) => onRetrieveMoreUserData(info)}
         />
       </SafeAreaView>
     );
   };
 
   if (isLoading) {
-    return spinnerRender();
+    return renderSpinner();
   }
 
   if (!!error) {
-    return errorRender();
-  }
-
-  if (!data.length) {
-    return renderEmpty();
+    return renderError();
   }
   
   return render();
@@ -207,6 +255,15 @@ const styles = StyleSheet.create({
     marginVertical: 8,
     backgroundColor: '#F8F9F9'
   },
+  totalContainer: {
+    flexDirection: 'row',
+    justifyContent: 'flex-end',
+    alignItems: 'center'
+  },
+  totalText: {
+    fontWeight: '600',
+    textDecorationLine: 'underline'
+  },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -231,5 +288,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginLeft: 10,
     color: 'grey'
+  },
+  footer: {
+    marginTop: 8,
+    justifyContent: 'center',
+    alignItems: 'center'
   }
 });
