@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { 
   ActivityIndicator,
+  Alert,
   FlatList,
   Image,
   Pressable,
@@ -66,6 +67,10 @@ export default App = () => {
     setData(filteredData);
   };
 
+  const onPressItem = ({ name: { first, last }, email }) => {
+    Alert.alert(`${first} ${last}`, email);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.center}>
@@ -89,32 +94,32 @@ export default App = () => {
 
   const renderItem = (item) => {
     return (
-      <View style={styles.itemContainer}>
+      <Pressable onPress={() => onPressItem(item)} style={styles.itemContainer}>
         <Image source={{uri: item.picture.thumbnail}} style={styles.image} />
         <View>
           <Text style={styles.textName}>{item.name.first} {item.name.last}</Text>
           <Text style={styles.textEmail}>{item.email}</Text>
         </View>
-      </View>
+      </Pressable>
     );
   };
 
   return (
     <SafeAreaView style={styles.container}>
-      <TextInput
-        placeholder='Search'
-        clearButtonMode='always'
-        autoCapitalize='none'
-        autoCorrect={false}
-        value={searchQuery}
-        onChangeText={(query) => handleSearch(query)}
-        style={styles.searchBox}
-      />
-      <FlatList 
-        data={data}
-        keyExtractor={(item) => item.login.uuid}
-        renderItem={({item}) => renderItem(item)}
-      />
+        <TextInput
+          placeholder='Search'
+          clearButtonMode='always'
+          autoCapitalize='none'
+          autoCorrect={false}
+          value={searchQuery}
+          onChangeText={(query) => handleSearch(query)}
+          style={styles.searchBox}
+        />
+        <FlatList 
+          data={data}
+          keyExtractor={(item) => item.login.uuid}
+          renderItem={({item}) => renderItem(item)}
+        />
     </SafeAreaView>
   );
 }
@@ -147,13 +152,18 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderWidth: 1,
     borderRadius: 8,
-    borderColor: '#CCC'
+    borderColor: '#CCC',
+    marginVertical: 8
   },
   itemContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginLeft: 10,
-    marginTop: 14
+    marginTop: 14,
+    borderWidth: 1,
+    borderRadius: 8,
+    borderColor: '#CCC',
+    paddingHorizontal: 8,
+    paddingVertical: 10
   },
   image: {
     width: 50,
