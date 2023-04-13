@@ -76,25 +76,25 @@ export default App = () => {
     setData(filteredData);
   };
 
+  const onPressItem = ({ name: { first, last }, email }) => {
+    Alert.alert(`${first} ${last}`, email);
+  };
+
   const onRefreshUserData = () => {
     setIsRefreshing(true);
     loadUserData();
   };
 
-  const onPressItem = ({ name: { first, last }, email }) => {
-    Alert.alert(`${first} ${last}`, email);
-  };
-
-  if (isLoading) {
+  const spinnerRender = () => {
     return (
       <View style={styles.center}>
         <ActivityIndicator size='large' color="#89CFF0" />
         <Text>Loading ...</Text>
       </View>
     );
-  }
+  };
 
-  if (!!error) {
+  const errorRender = () => {
     return (
       <View style={styles.center}>
         <Text>Error on fetching data ...</Text>
@@ -104,7 +104,18 @@ export default App = () => {
         </TouchableOpacity>
       </View>
     );
-  }
+  };
+
+  const renderEmpty = () => {
+    return (
+      <View style={styles.center}>
+        <Text>No data at the moment</Text>
+        <TouchableOpacity activeOpacity={0.7} onPress={init} style={styles.button}>
+          <Text>Refresh</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  };
 
   const renderItem = (item) => {
     return (
@@ -118,8 +129,9 @@ export default App = () => {
     );
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
+  const render = () => {
+    return (
+      <SafeAreaView style={styles.container}>
         <TextInput
           placeholder='Search'
           clearButtonMode='always'
@@ -144,8 +156,23 @@ export default App = () => {
             />
           }
         />
-    </SafeAreaView>
-  );
+      </SafeAreaView>
+    );
+  };
+
+  if (isLoading) {
+    return spinnerRender();
+  }
+
+  if (!!error) {
+    return errorRender();
+  }
+
+  if (!data.length) {
+    return renderEmpty();
+  }
+  
+  return render();
 }
 
 const styles = StyleSheet.create({
