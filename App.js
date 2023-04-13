@@ -1,5 +1,15 @@
 import { useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { 
+  ActivityIndicator,
+  FlatList,
+  Image,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View 
+} from 'react-native';
 
 const TIMEOUT = 3000; // 3 seconds
 const ITEMS_PER_PAGE = 100;
@@ -14,7 +24,6 @@ export default App = () => {
   const [searchQuery, setSearchQuery] = useState('');
 
   const init = () => {
-    console.log("init init");
     setIsLoading(true);
     setTimeout(() => {
       fetchData(API_URL);
@@ -50,7 +59,7 @@ export default App = () => {
     );
   }
 
-  if (error) {
+  if (!!error) {
     return (
       <View style={styles.center}>
         <Text>Error on fetching data ...</Text>
@@ -62,6 +71,18 @@ export default App = () => {
     );
   }
 
+  const renderItem = (item) => {
+    return (
+      <View style={styles.itemContainer}>
+        <Image source={{uri: item.picture.thumbnail}} style={styles.image} />
+        <View>
+          <Text style={styles.textName}>{item.name.first} - {item.name.last}</Text>
+          <Text style={styles.textEmail}>{item.email}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <TextInput
@@ -72,6 +93,11 @@ export default App = () => {
         value={searchQuery}
         onChangeText={(query) => handleSearch(query)}
         style={styles.searchBox}
+      />
+      <FlatList 
+        data={data}
+        keyExtractor={(item) => item.login.uuid}
+        renderItem={({item}) => renderItem(item)}
       />
     </SafeAreaView>
   );
@@ -107,4 +133,25 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     borderColor: '#CCC'
   },
+  itemContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+    marginTop: 14
+  },
+  image: {
+    width: 50,
+    height: 50,
+    borderRadius: 25
+  },
+  textName: {
+    fontSize: 17,
+    marginLeft: 10,
+    fontWeight: '600'
+  },
+  textEmail: {
+    fontSize: 14,
+    marginLeft: 10,
+    color: 'grey'
+  }
 });
